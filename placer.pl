@@ -27,6 +27,9 @@ placeTriggered((EventInstanceId,SourceId, EventId, Params), AllocHW, NewAllocHW,
 	placeChains(TriggeredChains, Params, AllocHW, NewAllocHW, PlacedByEvent).
 
 %Given a list of Chains, place every single of them
+%%%%%%%%%%%%%%%%%
+% BEWARE: CUTS! %
+%%%%%%%%%%%%%%%%%
 placeChains([], _,AllocHW,AllocHW,[]):-!.
 placeChains([ChainId|ListOfChains], Params, OldAllocHW, NewAllocHW, [PlacedChain|PlacedChains]):-
 	placeChain(ChainId, Params, OldAllocHW, AllocHW,PlacedChain),
