@@ -1,7 +1,7 @@
 %% APPLICATION (defined by operator) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function(functionId, operatorId, listOfSoftwareRequirements, AvgBillingUnits)
-function(f1, appOp, [java],[(ram, 512)], 3).
-function(f2, appOp, [python], [(ram, 256)], 5).
+function(f1, appOp, [java],(512, 1), 3).
+function(f2, appOp, [python], (256, 2), 5).
 
 %functionBehaviour(functionId, listOfInputs, listOfInteractions, listOfOutputs)
 %interaction (interactionType, serviceType, ListofParamTypes)

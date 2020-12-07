@@ -10,6 +10,7 @@
 secFaaS(AllPlacedChains) :- 
 	retractall(event(_,_,_,_)),
 	consult('newtriggers'),
+	%consult('executiontimes'), processExecTimes(),
 	findall((Id,SourceId, EventId, Params), eventInstance(Id,SourceId, EventId, Params), Events), % SF: changed 07/12, now retrieves all info
 	placeAll(Events, [], AllPlacedChains). %[] is initial Allocated Hardware
 
@@ -85,7 +86,7 @@ mapping([(F,FT,I)|Fs], OldAllocHW, NewAllocHW, [on(F,N,C)|P],Cost):-
 	node(N, _, _, SWCaps, HWCaps, UnitCost), % SF: added cost 07/12
 	subset(SWReqs, SWCaps), nodeLabelOK(FT, N, NodeLabel),
 	servicesOK(I,N,NodeLabel),
-	nodeResourceOK(N, OldAllocHW, HWCaps, HWReqs, AllocHW),
+	hwReqsOK(HWReqs, HWCaps, N, OldAllocHW,AllocHW),
 	mapping(Fs, AllocHW, NewAllocHW, P, OldCost),
 	C is TimeUnits * UnitCost, Cost is OldCost + C. % SF: added cost 07/12
 
@@ -104,24 +105,10 @@ servicesOK([(_,ServiceType,InteractionParamTypes)|Interactions], Node, NodeLabel
 	(NodeLabel==MaxType ;lattice_higherThan(NodeLabel, MaxType)), %check interaction labels is ok with node label
 	servicesOK(Interactions, Node, NodeLabel).
 
-%nodeResourceOK(NodeId, AllocHW, HWCaps, HWReqs,NewAllocHW),
-nodeResourceOK(_,AllocHW,_,[],AllocHW).
-nodeResourceOK(Node, OldAllocHW, HWCaps,[(Resource, Needed)|HWReqs], NewAllocHW):-
-	member((Resource,TotalResources), HWCaps),
-	Needed =< TotalResources,
-	checkAndAllocate(Node, OldAllocHW, Resource, TotalResources, Needed, AllocHW),
-	nodeResourceOK(Node, AllocHW,HWCaps, HWReqs, NewAllocHW).
-
-%search Node and look in its resources list
-checkAndAllocate(Node, [], Resource, _, Needed, [(Node,[(Resource, Needed)])]).
-checkAndAllocate(Node, [(N,ListOfRes)|OldAllocHW], Resource, TotalResources, Needed,[(N,ListOfRes)|NewAllocHW]):-
-	Node\==N, checkAndAllocate(Node, OldAllocHW, Resource, TotalResources, Needed,NewAllocHW).
-checkAndAllocate(Node, [(N,ListOfRes)|OldAllocHW], Resource, TotalResources, Needed,[(N,NewListOfR)|OldAllocHW]):-
-	Node==N, checkListOfRes(ListOfRes, Resource, TotalResources,Needed, NewListOfR).
-
-%search for a resource in list, check if resources are available and update resources list
-checkListOfRes([],Resource, _,Needed, [(Resource, Needed)]).
-checkListOfRes([(Res, _)|OldList], Resource, TotalResources,Needed, NewList):-
-	Resource\==Res, checkListOfRes(OldList, Resource, TotalResources, Needed, NewList).
-checkListOfRes([(Res, Used)|OldList], Resource, TotalResources, Needed, [(Res, NewUsed)|OldList]):-
-	Resource==Res, NewUsed is Used + Needed, NewUsed =< TotalResources.
+hwReqsOK((RAMReq,CPUReq), (RAMCap,CPUCap), N, [], [(N,(RAMReq,CPUReq))]) :-
+	RAMCap >= RAMReq, CPUCap >= CPUReq.
+hwReqsOK((RAMReq,CPUReq), (RAMCap,CPUCap), N, [(N,(AllocRAM,AllocCPU))|L], [(N,(NewAllocRAM,NewAllocCPU))|L]) :-
+	NewAllocRAM is AllocRAM + RAMReq, RAMCap >= NewAllocRAM,
+	NewAllocCPU is AllocCPU + CPUReq, CPUCap >= NewAllocCPU.
+hwReqsOK(HWReqs, HWCaps, N, [(N1,AllocHW)|L], [(N1,AllocHW)|NewL]) :-
+	N \== N1, hwReqsOK(HWReqs, HWCaps, N, L, NewL).
