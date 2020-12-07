@@ -1,7 +1,7 @@
 %% APPLICATION (defined by operator) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function(functionId, operatorId, listOfSoftwareRequirements)
-function(f1, appOp, [java],[(ram, 512)]).
-function(f2, appOp, [python], [(ram, 256)]).
+% function(functionId, operatorId, listOfSoftwareRequirements, AvgBillingUnits)
+function(f1, appOp, [java],[(ram, 512)], 3).
+function(f2, appOp, [python], [(ram, 256)], 5).
 
 %functionBehaviour(functionId, listOfInputs, listOfInteractions, listOfOutputs)
 %interaction (interactionType, serviceType, ListofParamTypes)
@@ -30,9 +30,9 @@ g_lattice_higherThan(medium, low).
 
 
 % node labeling
-assignNodeLabel(NodeId, top)    :- node(NodeId,_,SecCaps,_,_), member(antitampering, SecCaps), member(data_encryption, SecCaps).
-assignNodeLabel(NodeId, medium) :- node(NodeId,_,SecCaps,_,_), \+(member(antitampering, SecCaps)), member(data_encryption, SecCaps).
-assignNodeLabel(NodeId, low)    :- node(NodeId,_,SecCaps,_,_), \+(member(data_encryption, SecCaps)).
+assignNodeLabel(NodeId, top)    :- node(NodeId,_,SecCaps,_,_,_), member(antitampering, SecCaps), member(data_encryption, SecCaps).
+assignNodeLabel(NodeId, medium) :- node(NodeId,_,SecCaps,_,_,_), \+(member(antitampering, SecCaps)), member(data_encryption, SecCaps).
+assignNodeLabel(NodeId, low)    :- node(NodeId,_,SecCaps,_,_,_), \+(member(data_encryption, SecCaps)).
 
 %service labeling
 assignServiceLabel(SId, database, top) :- service(SId, aws_EU, database, _).

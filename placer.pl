@@ -33,9 +33,9 @@ placeChains([ChainId|ListOfChains], Params, OldAllocHW, NewAllocHW, [PlacedChain
 	placeChains(ListOfChains, Params, AllocHW, NewAllocHW, PlacedChains),!.
 
 %Given a chain, input paramaters types and an allocation, return the new allocation and a placement of the chain
-placeChain(ChainId, Params, AllocHW, NewAllocHW, (ChainId,PlacedChain)):-
+placeChain(ChainId, Params, AllocHW, NewAllocHW, (ChainId,PlacedChain,Cost)):-
     functionTypes(Params, ChainId, TypedFunctions),
-    mapping(TypedFunctions, AllocHW, NewAllocHW,PlacedChain).
+    mapping(TypedFunctions, AllocHW, NewAllocHW,PlacedChain,Cost).
 
 functionTypes(Params, ChainId, TypedFunctions) :-
 	functionChain(ChainId, ListOfFunctions),
@@ -75,15 +75,16 @@ lattice_higherThan(X, Y) :- g_lattice_higherThan(X,Y).
 lattice_higherThan(X, Y) :- g_lattice_higherThan(X,W), lattice_higherThan(W,Y).
 
 
-mapping([], AllocHW,AllocHW,[]).
+mapping([], AllocHW,AllocHW,[],0).
 %(Function, FunctionType, Interactions)
-mapping([(F,FT,I)|Fs], OldAllocHW, NewAllocHW, [on(F,N)|P]):-
-    function(F, _,SWReqs, HWReqs),
-	node(N, _, _, SWCaps, HWCaps),
+mapping([(F,FT,I)|Fs], OldAllocHW, NewAllocHW, [on(F,N,C)|P],Cost):-
+    function(F, _,SWReqs, HWReqs, TimeUnits), % SF: added cost 07/12
+	node(N, _, _, SWCaps, HWCaps, UnitCost), % SF: added cost 07/12
 	subset(SWReqs, SWCaps), nodeLabelOK(FT, N, NodeLabel),
 	servicesOK(I,N,NodeLabel),
 	nodeResourceOK(N, OldAllocHW, HWCaps, HWReqs, AllocHW),
-	mapping(Fs, AllocHW, NewAllocHW, P).
+	mapping(Fs, AllocHW, NewAllocHW, P, OldCost),
+	C is TimeUnits * UnitCost, Cost is OldCost + C. % SF: added cost 07/12
 
 nodeLabelOK(FT, Node, FT):- 
 	assignNodeLabel(Node, FT).
@@ -111,19 +112,13 @@ nodeResourceOK(Node, OldAllocHW, HWCaps,[(Resource, Needed)|HWReqs], NewAllocHW)
 %search Node and look in its resources list
 checkAndAllocate(Node, [], Resource, _, Needed, [(Node,[(Resource, Needed)])]).
 checkAndAllocate(Node, [(N,ListOfRes)|OldAllocHW], Resource, TotalResources, Needed,[(N,ListOfRes)|NewAllocHW]):-
-	Node\==N,
-	checkAndAllocate(Node, OldAllocHW, Resource, TotalResources, Needed,NewAllocHW).
-
+	Node\==N, checkAndAllocate(Node, OldAllocHW, Resource, TotalResources, Needed,NewAllocHW).
 checkAndAllocate(Node, [(N,ListOfRes)|OldAllocHW], Resource, TotalResources, Needed,[(N,NewListOfR)|OldAllocHW]):-
-	Node==N,
-	checkListOfRes(ListOfRes, Resource, TotalResources,Needed, NewListOfR).
+	Node==N, checkListOfRes(ListOfRes, Resource, TotalResources,Needed, NewListOfR).
 
 %search for a resource in list, check if resources are available and update resources list
 checkListOfRes([],Resource, _,Needed, [(Resource, Needed)]).
 checkListOfRes([(Res, _)|OldList], Resource, TotalResources,Needed, NewList):-
-	Resource\==Res,
-	checkListOfRes(OldList, Resource, TotalResources, Needed, NewList).
+	Resource\==Res, checkListOfRes(OldList, Resource, TotalResources, Needed, NewList).
 checkListOfRes([(Res, Used)|OldList], Resource, TotalResources, Needed, [(Res, NewUsed)|OldList]):-
-	Resource==Res,
-	NewUsed is Used + Needed,
-	NewUsed =< TotalResources.
+	Resource==Res, NewUsed is Used + Needed, NewUsed =< TotalResources.
