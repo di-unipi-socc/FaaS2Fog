@@ -2,15 +2,15 @@
 :- consult('infrastructure').
 :- consult('application').
 
-%query(secFaas(RESULT)).
+%query(secFaaS(RESULT)).
 %RESULT= placement for event at every request
 %[(event1, [(chainID1, PLACEMENT)], [(chainID2, Placement)...]..., [ChainIDK, Placement]...),... (eventn), [(chainIDm, Placement)]...]
 % an autonomic placer/orchestrator handles the placement of chain instances 
 % defined by the app operator, e.g.:
-secFaas(AllPlacedChains) :- 
+secFaaS(AllPlacedChains) :- 
 	retractall(event(_,_,_,_)),
 	consult('newtriggers'),
-	findall(EventInstanceId, eventInstance(EventInstanceId, _,_,_), Events),
+	findall((Id,SourceId, EventId, Params), eventInstance(Id,SourceId, EventId, Params), Events), % SF: changed 07/12, now retrieves all info
 	placeAll(Events, [], AllPlacedChains). %[] is initial Allocated Hardware
 
 %Given a list of EventInstance, place all the chains triggered
@@ -20,8 +20,8 @@ placeAll([EventInstance|ListOfEvents], AllocHW, [PlacedByEvent|AllPlacedChains])
 	placeAll(ListOfEvents, NewAllocHW, AllPlacedChains).
 
 %Given an EventInstance, place all the chains it triggers
-placeTriggered(EventInstanceId, AllocHW, NewAllocHW, (EventInstanceId,PlacedByEvent)):-
-	eventInstance(EventInstanceId,SourceId, EventId, Params),
+placeTriggered((EventInstanceId,SourceId, EventId, Params), AllocHW, NewAllocHW, (EventInstanceId,PlacedByEvent)):-
+	% SF: changed 07/12, does not retrieve eventInstance again
 	eventSource(SourceId, SourceType, _),
 	findall(ChainId, functionChainTrigger(ChainId, SourceType, EventId), TriggeredChains),
 	placeChains(TriggeredChains, Params, AllocHW, NewAllocHW, PlacedByEvent).
