@@ -1,9 +1,9 @@
 %% APPLICATION (defined by operator) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% function(functionId, operatorId, listOfSWReqs, HWReqs(memory, vCPU, Htz), timeout, listOfServiceReqs(serviceType, latency))
-function(f1, appOp, [java],(512, 1, 500), 45,  [(amazonDB, 150), (posteAuth, 150)]).
-function(f2, appOp, [python], (256, 2, 550), _,[]).
+% function(functionId, listOfSWReqs, HWReqs(memory, vCPU, Htz), timeout, listOfServiceReqs(serviceType, latency))
+function(f1, [java],(512, 1, 500), 45,  [(amazonDB, 350), (posteAuth, 350)]).
+function(f2, [python], (256, 2, 550), _,[]).
 
 %functionBehaviour(functionId, listOfInputs, listOf(serviceReq, TypeParam), listOfOutputs)
 %f1
@@ -11,13 +11,13 @@ functionBehaviour(f1, [X,Y,Z],[Z,top], [W]) :- maxType(X,Y,W).
 %f2
 functionBehaviour(f2, [X],[],[X]).
 
-%functionChain(functionChainId, triggeringEvent(eventSource, eventType, inputParameters,
+%functionChain(functionChainId, operatorId, triggeringEvent(eventSource, eventType, inputParameters,
 %               listOfFunctions(functionId(listOfServiceInstances)),
 %               listOfIntraFunctionLatencies).
 functionChain(
-  c1, (aws_bucket_5678, record_read, [top,medium,top]),
-  [(f1,[dbAws1, _]),(f2,[])],
-  [150]
+  c1, appOp,(aws_bucket_5678, record_read, [top,medium,top]),
+  [(f1,[dbAws1, X]),(f2,[])],
+  [350]
 ).
 
 % lattice of security types
@@ -32,8 +32,8 @@ assignNodeLabel(NodeId, medium) :- node(NodeId,_,SecCaps,_,_,_), \+(member(antit
 assignNodeLabel(NodeId, low)    :- node(NodeId,_,SecCaps,_,_,_), \+(member(data_encryption, SecCaps)).
 
 %service labeling
-assignServiceLabel(SId, databaseAuthAmazon, top) :- service(SId, aws_EU, databaseAuthAmazon, _).
-assignServiceLabel(SId, databaseAuthAmazon, medium) :- service(SId, aws_US, databaseAuthAmazon, _).
-assignServiceLabel(SId, databaseAuthAmazon, low) :- service(SId, ServiceProvider, databaseAuthAmazon, _), \+ (ServiceProvider = aws_EU, ServiceProvider = aws_US).
+assignServiceLabel(SId, amazonDB, top) :- service(SId, aws_EU, amazonDB, _).
+assignServiceLabel(SId, amazonDB, medium) :- service(SId, aws_US, amazonDB, _).
+assignServiceLabel(SId, amazonDB, low) :- service(SId, ServiceProvider, amazonDB, _), \+ (ServiceProvider = aws_EU, ServiceProvider = aws_US).
 assignServiceLabel(SId, posteAuth, top) :- service(SId, poste_ITA, posteAuth, _).
 assignServiceLabel(SId, posteAuth, low) :- service(SId, ServiceProvider, posteAuth, _), \+(ServiceProvider = poste_ITA).

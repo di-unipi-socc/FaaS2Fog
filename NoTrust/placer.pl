@@ -1,76 +1,30 @@
 :- use_module(library(lists)).
-:- consult('infrastructure').
-:- consult('application').
-:- dynamic eventInstance/4.
-:- dynamic avgExecTime/3.
+%:- consult('infrastructure').
+%:- consult('application').
+:- consult('./ARapp/infrastructureAR').
+:- consult('./ARapp/applicationAR').
 
-%query(secFaaS(RESULT)).
-%RESULT= placement for event at every request
-%[(event1, [(chainID1, PLACEMENT)], [(chainID2, Placement)...]..., [ChainIDK, Placement]...),... (eventn), [(chainIDm, Placement)]...]
-% an autonomic placer/orchestrator handles the placement of chain instances 
-% defined by the app operator, e.g.:
-/*secFaaS(AllPlacedChains) :- 
-	retractall(event(_,_,_,_)),
-	consult('monitoring'),
-	findall((Id,SourceId, EventId, Params), eventInstance(Id,SourceId, EventId, Params), Events), % SF: changed 07/12, now retrieves all info
-	placeAll(Events, [], AllPlacedChains). %[] is initial Allocated Hardware
+placeChain(ChainId, Placement, Billing):-
+    functionChain(ChainId, AppOp, (GeneratorId,EventTrigger,TriggerTypes), FunctionList, LatencyList),
+	eventGenerator(GeneratorId,EventTrigger,SourceDestNodes),
+    typePropagation(TriggerTypes, FunctionList, TypedFunctionList),
+    mapping(AppOp, TypedFunctionList, LatencyList,SourceDestNodes, Placement),
+    determineCosts(Placement, Billing).
 
-%Given a list of EventInstance, place all the chains triggered
-placeAll([],_,[]).
-placeAll([EventInstance|ListOfEvents], AllocHW, [PlacedByEvent|AllPlacedChains]):-
-	placeTriggered(EventInstance, AllocHW, NewAllocHW, PlacedByEvent),
-	placeAll(ListOfEvents, NewAllocHW, AllPlacedChains).
-
-%Given an EventInstance, place all the chains it triggers
-placeTriggered((EventInstanceId,SourceId, EventId, Params), AllocHW, NewAllocHW, (EventInstanceId,PlacedByEvent)):-
-	eventSource(SourceId, SourceType, _),
-	findall((ChainId,Binding), functionChainTrigger(ChainId, SourceType, EventId,Binding), TriggeredChains),
-	placeChains(TriggeredChains, Params, AllocHW, NewAllocHW, PlacedByEvent).
-
-%Given a list of Chains, place every single of them
-%%%%%%%%%%%%%%%%%
-% BEWARE: CUTS! %
-%%%%%%%%%%%%%%%%%
-placeChains([], _,AllocHW,AllocHW,[]):-!.
-placeChains([(ChainId,Binding)|ListOfChains], Params, OldAllocHW, NewAllocHW, [PlacedChain|PlacedChains]):-
-	placeChain(ChainId, Binding, Params, OldAllocHW, AllocHW,PlacedChain),
-	placeChains(ListOfChains, Params, AllocHW, NewAllocHW, PlacedChains),!.
-
-%Given a chain, input paramaters types and an allocation, return the new allocation and a placement of the chain
-placeChain(ChainId, Binding, Params, AllocHW, NewAllocHW, (ChainId,PlacedChain,Cost)):-
-    functionTypes(Params, ChainId, TypedFunctions),
-    mapping(TypedFunctions, Binding,AllocHW, NewAllocHW,PlacedChain,Cost).
-*/
-placeChain(ChainId, PlacedChain, Costs):-
-	functionChain(ChainId, (_,_,Params), ListOfFunctions,LatencyList),
-	typePropagation(Params, ListOfFunctions, TypedFunctions),
-	mapping(TypedFunctions, [], NewAllocHW,PlacedChain),
-	checkLatency(PlacedChain, LatencyList),
-	printCosts(PlacedChain, Costs).
-
-checkLatency([on(_,_,_)],[]).
-checkLatency([on(_,N1,_), on(_,N2,_)|PlaceList],[ReqLat|LatList]):-
-	link(N1,N2,Lat),
-	Lat=<ReqLat,
-	checkLatency([on(_,N2,_)|PlaceList],LatList).
-
-printCosts([],[]).
-printCosts([on(_,N,_)|Plc], [(N,C)|Costs]):-
-	printCosts(Plc,Costs),
+determineCosts([],[]).
+determineCosts([on(_,N,_)|Plc], [(N,C)|Costs]):-
+	determineCosts(Plc,Costs),
 	\+(member((N,_,_),Costs)),
 	node(N,_,_,_,_,C).
-%functionTypes(ChainId, TypedFunctions) :-
-%	functionChain(ChainId, (_,_,Params), ListOfFunctions,_),
-%	typePropagation(Params, ListOfFunctions, TypedFunctions).
 
 typePropagation(_,[], []). 
-typePropagation(InTypes, [(F,Services)|Fs], [(F,Services,Type)|FTs]) :-
-	functionBehaviour(F,InTypes, InteractionsTypes, OutTypes),
-	append(InTypes, InteractionsTypes, FirstAppend),
-	append(FirstAppend, OutTypes, AllTypes),
-	sort(AllTypes,AllTypesSorted),
-	highestType(AllTypesSorted,Type),
-	typePropagation(OutTypes, Fs, FTs).
+typePropagation(InTypes, [(F,FServices)|FunctionList], [(F,FServices,FType)|TypedFunctionList]) :-
+    functionBehaviour(F, InTypes, InteractionsTypes, OutTypes),
+    append(InTypes, InteractionsTypes, TempTypes), append(TempTypes, OutTypes, AllTypes),
+    sort(AllTypes, AllTypesSorted),
+    highestType(AllTypesSorted,FType),
+    typePropagation(OutTypes, FunctionList, TypedFunctionList).
+
 
 %find highest type in a list
 highestType([T], T).
@@ -79,9 +33,9 @@ highestType([T1,T2|Ts], MaxT) :-
 	maxType(T1, MaxTofRest, MaxT).
 
 %find_Max(label1,label2,maximumLabel)
-maxType(X, X, X):-!. 										    %equal lable
-maxType(X, Y, X) :- dif(X,Y), lattice_higherThan(X,Y),!.	        %labels reachable with path from X to Y
-maxType(X, Y, Y) :- dif(X,Y), lattice_higherThan(Y,X),!.        	%labels reachable with path from Y to X 
+maxType(X, X, X). %:- !.								    %equal lable
+maxType(X, Y, X) :- dif(X,Y), lattice_higherThan(X,Y). %,!.	      %labels reachable with path from X to Y
+maxType(X, Y, Y) :- dif(X,Y), lattice_higherThan(Y,X).%,!.        	%labels reachable with path from Y to X 
 maxType(X, Y, Top) :-										%labels not reachable with path (on different branch) 
 	dif(X,Y), \+ lattice_higherThan(X,Y), \+ lattice_higherThan(Y,X),
 	lattice_higherThan(Top, X), lattice_higherThan(Top, Y),
@@ -89,31 +43,34 @@ maxType(X, Y, Top) :-										%labels not reachable with path (on different bra
 lattice_higherThan(X, Y) :- g_lattice_higherThan(X,Y).
 lattice_higherThan(X, Y) :- g_lattice_higherThan(X,W), lattice_higherThan(W,Y).
 
-%mapping(TypedFunction(Function, Services, Label), functionChainId, OldAllocation, NewAllocation, Placement)
-mapping([], AllocHW,AllocHW,[]).
-mapping([(F,Services,FT)|Fs], OldAllocHW, NewAllocHW, [on(F,N,Bindings)|P]):-
-    function(F, _,SWReqs, HWReqs, _, ServiceReqs),
-	node(N, _, _, SWCaps, HWCaps,_),
-	subset(SWReqs, SWCaps),
-	hwReqsOK(HWReqs, HWCaps, N, OldAllocHW,AllocHW),
-	assignNodeLabel(N,NodeLabel),
-	labelOK(FT,NodeLabel),
-	checkServices(N, FT,Services,ServiceReqs,Bindings),
-	%link(N, NWinner, LatWinner),
-	%service(Sid, _, ServiceType, NWinner),
-	%servicesOK(I,N,NodeLabel),
-	mapping(Fs, AllocHW, NewAllocHW, P).
 
-% hai appena piazzato F su NFaaS e devi scegliere con che servizio bindare
-/*link(NFaaS, NWinner, LWinner),
-serviceInstance(SWinner, NWinner),
-ReqLat =< LWinner,
-\+ (serviceInstance(SId2,N2,...), SId2 \== SWinner, N2 \== NWinner, link(NFaaS, N2, L2), L2 < LWinner).
-*/
-%first label can be on second label (ex: function on node)
-labelOK(SameLabel, SameLabel).
-labelOK(FunctionType, Label):- 
-	dif(FunctionType, Label), lattice_higherThan(Label, FunctionType).
+mapping(AppOp, TypedFunctionList, LatencyList, (SourceNode,DestNode), Placement) :-
+	mapping(AppOp, TypedFunctionList, LatencyList, SourceNode,DestNode,[], _, Placement).
+
+mapping(AppOp, [(F,FServices,FType)], [Lat1,Lat2|[]],PreviousNode,LastNode,OldAllocHW, AllocHW,[on(F,N,FServicesBinding)]):-
+	node(N, _, _, SWCaps, HWCaps, _),
+	checkLatPreviousNode(N,PreviousNode,Lat1),
+	functionReqs(F,SWReqs, HWReqs, FServicesReqs),
+    swReqsOK(SWReqs, SWCaps),
+    hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, AllocHW),
+    compatibleType(FType,N),
+    bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding),
+	checkLatPreviousNode(LastNode,N,Lat2).
+
+mapping(AppOp, [(F,FServices,FType)|FunctionList], [Latency|LatencyList], PreviousNode,LastNode,OldAllocHW, NewAllocHW, [on(F,N,FServicesBinding)|P]):-
+    node(N, _, _, SWCaps, HWCaps, _),
+	checkLatPreviousNode(N,PreviousNode,Latency),
+	functionReqs(F,SWReqs, HWReqs, FServicesReqs),
+    swReqsOK(SWReqs, SWCaps),
+    hwReqsOK(HWReqs, HWCaps, N, OldAllocHW, AllocHW),
+    compatibleType(FType,N),
+    bindServices(AppOp, N, FServices, FType, FServicesReqs, FServicesBinding),
+    mapping(AppOp, FunctionList, LatencyList, N, LastNode, AllocHW, NewAllocHW, P).
+
+checkLatPreviousNode(N1,N2, ReqLatency):-
+	link(N1, N2, Latency), Latency =< ReqLatency.
+
+swReqsOK(SWReqs, SWCaps):- subset(SWReqs, SWCaps).
 
 hwReqsOK((RAMReq,VCPUsReq,CPUReq), (RAMCap,VCPUsCap,CPUCap), N, [], [(N,(RAMReq,VCPUsReq,CPUReq))]) :-
 	RAMCap >= RAMReq, CPUCap >= CPUReq, VCPUsCap >= VCPUsReq.
@@ -124,55 +81,14 @@ hwReqsOK((RAMReq,VCPUsReq,CPUReq), (RAMCap,VCPUsCap,CPUCap), N, [(N,(AllocRAM,Al
 hwReqsOK(HWReqs, HWCaps, N, [(N1,AllocHW)|L], [(N1,AllocHW)|NewL]) :-
 	N \== N1, hwReqsOK(HWReqs, HWCaps, N, L, NewL).
 
-%checkServices(Node, listOfServices, ServiceReqs,Bindings)
-checkServices(_,_,[],[],[]).
-checkServices(Node,FT,[ServiceId|SerList], [(ServiceType,ReqLatency)|ReqList],Bindings):-
-	\+(var(ServiceId)),
-	service(ServiceId, _, ServiceType, ServiceNode),
-	link(Node, ServiceNode, Latency),
-	Latency=<ReqLatency,
-	checkServices(Node, FT,SerList,ReqList,Bindings).
-checkServices(Node,FT,[ServiceId|SerList], [(ServiceType,ReqLatency)|ReqList],[(ServiceType,Sid,ServiceNode)|Bindings]):-
-	var(ServiceId),
-	service(Sid, _, ServiceType, ServiceNode),
-	assignNodeLabel(ServiceNode, SerNodeLabel),
-	labelOK(ServiceLabel, SerNodeLabel),
-	assignServiceLabel(Sid,ServiceType, ServiceLabel),
-	labelOK(FT,ServiceLabel),
-	link(Node, ServiceNode, Latency),
-	Latency=<ReqLatency,
-	checkServices(Node,FT,SerList,ReqList, Bindings).
+compatibleType(Ftype,N) :- assignNodeLabel(N, Ntype), compatible(Ftype, Ntype).
+compatible(T,T).
+compatible(T1,T2) :- dif(T1,T2), lattice_higherThan(T2, T1).
 
-/*
-servicesOK([],_,_).
-servicesOK([(_,ServiceType,InteractionParamTypes)|Interactions], Node, NodeLabel):-
-	service(ServiceId, _,ServiceType, Node),
-	assignServiceLabel(ServiceId, ServiceType, ServiceLabel),
-	(NodeLabel==ServiceLabel;lattice_higherThan(NodeLabel, ServiceLabel)), %check service label is ok with node label
-	highestType(InteractionParamTypes, MaxType),
-	(MaxType==ServiceLabel;lattice_higherThan(ServiceLabel, MaxType)), %check service label is ok with interaction labels
-	(NodeLabel==MaxType ;lattice_higherThan(NodeLabel, MaxType)), %check interaction labels is ok with node label
-	servicesOK(Interactions, Node, NodeLabel).
-
-
-
-%findBindings(ListOfInteractions, ListOfBingings)
-findBindings([], []).
-findBindings([(ServiceId, ServiceType, SecType)|Interactions],[(ServiceType,Services)|BindingList]):-
-	var(ServiceId),
-	findall(SId, (service(SId,_,ServiceType, Node),servicesOK2(SId, ServiceType, SecType, Node)), Services),
-	findBindings(Interactions, BindingList).
-findBindings([(ServiceId, ServiceType, SecType)|Interactions],[(ServiceType,[ServiceId])|BindingList]):-
-	nonvar(ServiceId),
-	service(SId,_,ServiceType, Node),
-	servicesOK2(SId, ServiceType, SecType, Node),
-	findBindings(Interactions, BindingList).
-
-
-servicesOK2(ServiceId, ServiceType,HighestType, Node):-
-	assignServiceLabel(ServiceId, ServiceType, ServiceLabel),
-	assignNodeLabel(Node, NodeLabel),
-	(NodeLabel==ServiceLabel;lattice_higherThan(NodeLabel, ServiceLabel)), %check service label is ok with node label
-	(HighestType==ServiceLabel;lattice_higherThan(ServiceLabel, HighestType)), %check service label is ok with interaction labels
-	(NodeLabel==HighestType ;lattice_higherThan(NodeLabel, HighestType)). %check interaction labels is ok with node label
-*/
+bindServices(_,_,[],_,[],[]).
+bindServices(AppOp,Node,[SId|SerList], FLabel, [(ServiceType,ReqLatency)|ReqList],[(ServiceType,SId,ServiceNode)|Binding]):-
+	service(SId, _, ServiceType, ServiceNode),
+	assignServiceLabel(SId,ServiceType, ServiceLabel), compatible(FLabel,ServiceLabel),
+	assignNodeLabel(ServiceNode, SerNodeLabel), compatible(ServiceLabel, SerNodeLabel),
+	link(Node, ServiceNode, Latency), Latency =< ReqLatency,
+	bindServices(AppOp,Node,SerList,FLabel,ReqList, Binding).
