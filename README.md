@@ -10,7 +10,7 @@ Before using **FaaS2Fog** you need to install the latest stable release of [SWI-
 You need to install [ProbLog2 ](https://dtai.cs.kuleuven.be/problog/index.html) to use the *Trust* version.
 ## Tutorial
 
-To try **FaaS2Fog** *NoTrust*:
+To try **FaaS2Fog** *NoTrust* version:
 
 1. Download or clone this repository.
 
@@ -28,7 +28,7 @@ To try **FaaS2Fog** *NoTrust*:
     on(fAR,centralRouter,[])]
    ```
    
-To try **FaaS2Fog** *NoTrust*:
+To try **FaaS2Fog** *Trust* version:
 1. Download or clone this repository.
 
 2. Open a terminal in the project folder and run `problog placer.pl`.
