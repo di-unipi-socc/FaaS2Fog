@@ -21,8 +21,8 @@ sr_neg((Ta, Ca), (Tb, Ca)) :- Tb is 1.0-Ta.
 %%%% ProbLog does not support dif/2 %%%%
 dif(A,B):- \+(A==B).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-trustRadius(2).
-query(placeChain(chainMap,P,C)).
+
+query(placeChain(chainGath,P)).
 %query(trusts(appOp,X,4)).
 
 trustOpinion(X,X).
@@ -37,24 +37,24 @@ trusts(A,B,D) :-
     trusts(C,B,NewD).
 
 %%% trustable relations declared by appOp
-(0.9,0.9)::trustOpinion(appOp, bigG).
+(0.9,0.9)::trustOpinion(appOp, cloudProvider).
 (0.99,0.9)::trustOpinion(appOp, telco).
 
 %%% trustable relations declared by telco
 (0.5,0.9)::trustOpinion(telco, privateCitizen1).
-(0.9,0.9)::trustOpinion(telco, unipi).
+(0.9,0.9)::trustOpinion(telco, university).
 
-%%% trustable relations declared by unipi
-(0.8,0.85)::trustOpinion(unipi, privateCitizen1).
-(0.9,0.9)::trustOpinion(unipi, openStreets).
+%%% trustable relations declared by university
+(0.8,0.85)::trustOpinion(university, privateCitizen1).
+(0.9,0.9)::trustOpinion(university, openS).
 
 %%% trustable relations declared by private1
 (0.6,1)::trustOpinion(privateCitizen1, privateCitizen2).
 
 %%% trustable relations declared by private2
-(0.8,1)::trustOpinion(privateCitizen2, openStreets).
-(0.8,0.9)::trustOpinion(privateCitizen2, bigG).
+(0.8,1)::trustOpinion(privateCitizen2, openS).
+(0.8,0.9)::trustOpinion(privateCitizen2, cloudProvider).
 
-%%% trustable relations declared by bigG
-(0.9,0.9)::trustOpinion(bigG, telco).
-(0.89,0.9)::trustOpinion(bigG, openStreets).
+%%% trustable relations declared by cloudProvider
+(0.9,0.9)::trustOpinion(cloudProvider, telco).
+(0.89,0.9)::trustOpinion(cloudProvider, openS).
