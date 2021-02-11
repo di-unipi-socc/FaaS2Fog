@@ -22,7 +22,7 @@ sr_neg((Ta, Ca), (Tb, Ca)) :- Tb is 1.0-Ta.
 dif(A,B):- \+(A==B).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-query(placeChain(chainGath,P)).
+query(faas2fog(chainGath,P)).
 %query(trusts(appOp,X,4)).
 
 trustOpinion(X,X).

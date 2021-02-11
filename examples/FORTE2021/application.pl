@@ -19,8 +19,8 @@ functionBehaviour(fAR, [Sc,Draw], [], [ScAr]):- maxType(Sc, Draw, ScAr).
 %               listOfFunctions(functionId(listOfServiceInstances)),
 %               listOfIntraFunctionLatencies).
 functionChain(
-  chainGath, appOp,(userDevice1, [top,low,low, low]), %[userInfo, screen, geo, sensors], latency
-  [(fLogin,[myUserDB]),(fShop,[]),(fGeo,[_]),(fGather, [myShop]), (fAR, [])],
+  chainGath, appOp,(userDevice, [top,low,low, low]), %[userInfo, screen, geo, sensors], latency
+  [(fLogin,[myUsers]),(fShop,[]),(fGeo,[_]),(fGather, [myShop]), (fAR, [])],
   [12,10,13,10,15]
 ).
 

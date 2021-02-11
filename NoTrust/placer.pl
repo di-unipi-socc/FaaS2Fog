@@ -3,7 +3,7 @@
 :- consult('application').
 
 
-sec2fog(ChainId, Placement):-
+faas2fog(ChainId, Placement):-
     functionChain(ChainId, AppOp, (GeneratorId,TriggerTypes), FunctionList, LatencyReqs),
 	eventGenerator(GeneratorId, GeneratorNode), 
     typePropagation(TriggerTypes, FunctionList, TypedFunctionList),

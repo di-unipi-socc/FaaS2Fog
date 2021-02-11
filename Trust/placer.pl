@@ -1,9 +1,9 @@
 :- use_module(library(lists)).
-:- consult('infrastructure').
-:- consult('application').
-:- consult('trust').
+:- consult('../examples/FORTE2021/infrastructure').
+:- consult('../examples/FORTE2021/application').
+:- consult('../examples/FORTE2021/trust').
 
-sec2fog(ChainId, Placement):-
+faas2fog(ChainId, Placement):-
     functionChain(ChainId, AppOp, (GeneratorId,TriggerTypes), FunctionList, LatencyReqs),
 	eventGenerator(GeneratorId, GeneratorNode), 
     typePropagation(TriggerTypes, FunctionList, TypedFunctionList),
