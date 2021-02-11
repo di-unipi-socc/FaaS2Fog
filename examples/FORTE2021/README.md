@@ -32,7 +32,7 @@ The second question posed by motivating example is:
 > relations among the involved stakeholders?
 
 
-The answer to this question is given running the placer with no trust version.
+The answer to this question is given running the placer with trust version.
 The results are:
 
     faas2fog(chainGath,[on(fLogin,ispRouter,[(userDB, myUsers, ispRouter)]), on(fShop,labServer,[]), on(fGeo,ispRouter,[(maps, cMaps, cloudNode)]), on(fGather,switch,[(shops, myShop, switch)]), on(fAR,southAntenna,[])]):   0.611528074761776, 0.31381059609
