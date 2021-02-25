@@ -50,12 +50,14 @@ bindServices(AppOp, Node, [S|Ss], FType, [(SType,RequiredLatency)|ReqList], [(ST
 
 getService(_, S, ServiceType, ServiceNode) :-
 	service(S, _, ServiceType, ServiceNode).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %find highest type in a list
 highestType([T], T).
 highestType([T1,T2|Ts], MaxT) :-
 	highestType([T2|Ts], MaxTofRest),
 	once(maxType(T1, MaxTofRest, MaxT)).
+
 maxType(X, X, X).
 maxType(X, Y, X) :- dif(X,Y), lattice_higherThan(X,Y).
 maxType(X, Y, Y) :- dif(X,Y), lattice_higherThan(Y,X).
@@ -63,6 +65,7 @@ maxType(X, Y, Top) :-											%labels not reachable with path (on different br
 	dif(X,Y), \+ lattice_higherThan(X,Y), \+ lattice_higherThan(Y,X),
 	lattice_higherThan(Top, X), lattice_higherThan(Top, Y),
 	\+ (lattice_higherThan(Top, LowerTop), lattice_higherThan(LowerTop, X), lattice_higherThan(LowerTop, Y)).
+	
 lattice_higherThan(X, Y) :- g_lattice_higherThan(X,Y).
 lattice_higherThan(X, Y) :- g_lattice_higherThan(X,W), lattice_higherThan(W,Y).
 
