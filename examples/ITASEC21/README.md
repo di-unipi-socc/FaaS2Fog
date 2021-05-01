@@ -1,6 +1,6 @@
-<p><img align="left" width="100"> <h1>ITASEC2021 Example</h1></p>
+<p><img align="left" width="100"> <h1>ITASEC21 Example</h1></p>
 
-Here are stored the declaration to run the motivating example of the ITASEC2120 paper.
+Here are stored the declaration to run the motivating example of the ITASEC21 paper.
 
 ## Running the example
 
