@@ -1,66 +1,42 @@
 
+<p><img align="left" width="100"> <h1>FaaS2Fog</h1></p>
 
-<p><img align="left" width="100"> <h1>Probabilistic SKnife</h1></p>
-Probabilstic SKnife (ProbSKnife) is a declarative prototype to evaluate the expected cost of a partitioning expecting to change the initial labelling. For every possible labelling it calculates:
-
-1. The probability of changing to the labelling
-
-2. The eligible partitionings that satisfy the labelling with the cost of migration from the starting partitionings
-
-To calculate the expected cost, **ProbSKnife** is launched from a Python script that parse the results, groups them by the labelling minimum and aggregates by eligible partionings.
-
+FaaS2Fog is a declarative prototype to place orchestrated FaaS applications onto a Fog infrastructure satisfying QoS, hardware and software requirements of serverless functions and employing information-flow security techniques to prevent leaks of critical information. During the placement, FaaS2Fog can resolve bindings of service with functions, considering the service type and latency requierements.
+FaaS2Fog has two versions: the _Trust_ one, which uses trust relations among stakeholders to rank the eligible placements, based on the model of [SecFog](https://github.com/di-unipi-socc/SecFog).; the *NoTrust* one, which does not employ trust techniques.
 <br></br>
 ## Prerequisites
 
-Before using **ProbSKnife** You need to install [ProbLog2](https://dtai.cs.kuleuven.be/problog/index.html) and Python.
+Before using **FaaS2Fog** you need to install the latest stable release of [SWI-Prolog](https://www.swi-prolog.org/download/stable) to use the *NoTrust* version.
+You need to install [ProbLog2 ](https://dtai.cs.kuleuven.be/problog/index.html) to use the *Trust* version.
 ## Tutorial
 
-To try **ProbSKnife**:
+To try **FaaS2Fog** *NoTrust* version:
 
 1. Download or clone this repository.
 
-2. Open a terminal in the project folder and run `python  .\main.py StartingPartitioning`.
+2. Open a terminal in the project folder and run `swipl placer.pl`.
 
-3. The output is a table that resumes every reachable partitioning with its cost, its probability to be reached and the expected cost to reach it from the starting labelling.
+3. Inside the running program either run the query
+   ```prolog
+   :- placeChain(ChainName, Placement).
+   ``` 
+   The output are the elegible placements for the application described in `application.pl` onto the infrastructure described in `infrastructure.pl` . Each Placement is composed by the function identifier, the node selected for the placement and the list of resolved bindings with services (triples of service type, service instance and node hosting the service).
+   E.g. of single placement
+   ```prolog
+   Placement= [on(fLogin,labServer,[(database, myUserDB, centralRouter)]),
+    on(fNav,switch,[(mapService, openMaps, officeServer)]),
+    on(fAR,centralRouter,[])]
+   ```
+   
+To try **FaaS2Fog** *Trust* version:
+1. Download or clone this repository.
 
-   E.g. of a table record for the starting partitioning ```[((top, safe), [south, west]), ((top, safe), [east, north])]```
-   ```
-                                                                         partitionings  costs  probabilities  expectedCost
-   0                    [((low, safe), [south, west]), ((low, safe), [east, north])]      0       0.125000       0.00000
-   1                     [((low, safe), [south, west]), ((top, low), [east, north])]      0       0.031250       0.00000
-   2    [((low, safe), [south, west]), ((top, low), [east]), ((top, safe), [north])]     20       0.031250       0.62500
-   3                    [((low, safe), [south, west]), ((top, safe), [east, north])]      0       0.031250       0.00000
-   4    [((low, safe), [south, west]), ((top, safe), [east]), ((top, low), [north])]     20       0.031250       0.62500
-   5    [((top, low), [south, east]), ((top, safe), [west]), ((low, safe), [north])]     80       0.031250       2.50000
-   6                     [((top, low), [south, west]), ((low, safe), [east, north])]      0       0.031250       0.00000
-   7                      [((top, low), [south, west]), ((top, low), [east, north])]      0       0.023438       0.00000
-   8     [((top, low), [south, west]), ((top, low), [east]), ((low, safe), [north])]     20       0.031250       0.62500
-   9     [((top, low), [south, west]), ((top, low), [east]), ((top, safe), [north])]     20       0.023438       0.46875
-   10                    [((top, low), [south, west]), ((top, safe), [east, north])]      0       0.023438       0.00000
-   11   [((top, low), [south, west]), ((top, safe), [east]), ((low, safe), [north])]     20       0.031250       0.62500
-   12    [((top, low), [south, west]), ((top, safe), [east]), ((top, low), [north])]     20       0.023438       0.46875
-   13   [((top, low), [south]), ((top, safe), [west, east]), ((low, safe), [north])]     60       0.031250       1.87500
-   14    [((top, low), [south]), ((top, safe), [west, east]), ((top, low), [north])]     60       0.023438       1.40625
-   15    [((top, low), [south]), ((top, safe), [west, north]), ((top, low), [east])]     60       0.023438       1.40625
-   16   [((top, low), [south]), ((top, safe), [west]), ((low, safe), [east, north])]     20       0.031250       0.62500
-   17    [((top, low), [south]), ((top, safe), [west]), ((top, low), [east, north])]     20       0.023438       0.46875
-   18   [((top, low), [south]), ((top, safe), [west]), ((top, safe), [east, north])]     20       0.023438       0.46875
-   19   [((top, safe), [south, east]), ((top, low), [west]), ((low, safe), [north])]     80       0.031250       2.50000
-   20                   [((top, safe), [south, west]), ((low, safe), [east, north])]      0       0.031250       0.00000
-   21                    [((top, safe), [south, west]), ((top, low), [east, north])]      0       0.023438       0.00000
-   22   [((top, safe), [south, west]), ((top, low), [east]), ((low, safe), [north])]     20       0.031250       0.62500
-   23   [((top, safe), [south, west]), ((top, low), [east]), ((top, safe), [north])]     20       0.023438       0.46875
-   24                   [((top, safe), [south, west]), ((top, safe), [east, north])]      0       0.023438       0.00000
-   25  [((top, safe), [south, west]), ((top, safe), [east]), ((low, safe), [north])]     20       0.031250       0.62500
-   26   [((top, safe), [south, west]), ((top, safe), [east]), ((top, low), [north])]     20       0.023438       0.46875
-   27   [((top, safe), [south]), ((top, low), [west, east]), ((low, safe), [north])]     60       0.031250       1.87500
-   28   [((top, safe), [south]), ((top, low), [west, east]), ((top, safe), [north])]     60       0.023438       1.40625
-   29   [((top, safe), [south]), ((top, low), [west, north]), ((top, safe), [east])]     60       0.023438       1.40625
-   30   [((top, safe), [south]), ((top, low), [west]), ((low, safe), [east, north])]     20       0.031250       0.62500
-   31    [((top, safe), [south]), ((top, low), [west]), ((top, low), [east, north])]     20       0.023438       0.46875
-   32   [((top, safe), [south]), ((top, low), [west]), ((top, safe), [east, north])]     20       0.023438       0.46875
-   ```
-   Finally, all the expected costs are aggregated to give the expected cost of a partitioning.
-   ```
-   The expected cost is 67.5
+2. Open a terminal in the project folder and run `problog placer.pl`.
+
+   The outputs are the elegible placements for the application described in `application.pl` onto the infrastructure described in `infrastructure.pl`, using the trust model and trust network of file `trust.pl`. Each placement has the _trust_ and the _confidence_.
+   E.g. of single placement
+    ```prolog
+   Placement= [on(fLogin,labServer,[(database, myUserDB, centralRouter)]),
+    on(fNav,switch,[(mapService, openMaps, officeServer)]),
+    on(fAR,centralRouter,[])]: 0.6932717463771, 0.43046721
    ```
